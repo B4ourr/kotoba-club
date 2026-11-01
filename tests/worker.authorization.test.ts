@@ -1,0 +1,9 @@
+import {describe,it,expect,vi} from 'vitest';
+import worker from '../worker';
+function envFor(memberRows:any[]){const run=vi.fn();const db={prepare:vi.fn((sql:string)=>({bind:(...args:any[])=>({all:async()=>({results:sql.includes('FROM memberships')?memberRows:[]}),first:async()=>null,run}),all:async()=>({results:[]}),first:async()=>null,run})),batch:vi.fn()};return {DB:db,ASSETS:{fetch:vi.fn(async()=>new Response('app'))}} as any}
+describe('Worker group authorization',()=>{
+ it('rejects unauthenticated protected reads',async()=>{const env=envFor([]);const res=await worker.fetch(new Request('https://test/api/me'),env);expect(res.status).toBe(401)});
+ it('cannot read another group even when its ID is supplied',async()=>{const env=envFor([{group_id:'family-b',user_email:'reader@example.test',role:'member'}]);const res=await worker.fetch(new Request('https://test/api/groups/family-a',{headers:{'oai-authenticated-user-email':'reader@example.test'}}),env);expect(res.status).toBe(403);expect(env.DB.prepare).toHaveBeenCalledTimes(1)});
+ it('cannot modify another group shared content',async()=>{const env=envFor([{group_id:'family-b',user_email:'reader@example.test',role:'member'}]);const res=await worker.fetch(new Request('https://test/api/groups/family-a/posts',{method:'POST',headers:{'content-type':'application/json','origin':'https://test','oai-authenticated-user-email':'reader@example.test'},body:JSON.stringify({kanji:'猫',kana:'ねこ',meaning:'cat'})}),env);expect(res.status).toBe(403);expect(env.DB.batch).not.toHaveBeenCalled()});
+ it('serves the static app with security headers',async()=>{const env=envFor([]);const res=await worker.fetch(new Request('https://test/'),env);expect(res.status).toBe(200);expect(res.headers.get('content-security-policy')).toContain("default-src 'self'")});
+});

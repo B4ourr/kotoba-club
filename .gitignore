@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+pnpm-lock.yaml
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage/
+.wrangler/
+
+*.tsbuildinfo
+.codex/
+
+# Private design inputs are not part of the public repository
+design/references/
