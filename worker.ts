@@ -1,4 +1,5 @@
 import { canAccessGroup, validateShareText } from './src/security';
+import { embeddedAssets } from './src/embedded-assets';
 type D1Result<T=unknown>={results:T[]};
 type Statement={bind(...values:unknown[]):Statement;all<T=any>():Promise<D1Result<T>>;first<T=any>():Promise<T|null>;run():Promise<unknown>};
 type D1Database={prepare(sql:string):Statement;batch(statements:Statement[]):Promise<unknown>};
@@ -29,7 +30,7 @@ export default {async fetch(request:Request,env:Env){
   if(sub==='posts'&&request.method==='DELETE'){const b=await body(request);const postId=String(b.id||'');await env.DB.prepare('DELETE FROM posts WHERE id=? AND group_id=? AND author_email=?').bind(postId,groupId,user).run();return json({ok:true})}
   const deleteComment=sub.match(/^comments\/([^/]+)$/);if(deleteComment&&request.method==='DELETE'){await env.DB.prepare('DELETE FROM comments WHERE id=? AND group_id=? AND author_email=?').bind(deleteComment[1],groupId,user).run();return json({ok:true})}
  }
- if(!path.startsWith('/api/')){const asset=await env.ASSETS.fetch(request);const h=new Headers(asset.headers);for(const [k,v] of Object.entries(SECURITY))h.set(k,v);return new Response(asset.body,{status:asset.status,statusText:asset.statusText,headers:h})}
+ if(!path.startsWith('/api/')){const asset=embeddedAssets[path==='/'?'/index.html':path];if(!asset)return json({error:'Not found'},404);return new Response(request.method==='HEAD'?null:asset.body,{status:200,headers:{...SECURITY,'content-type':asset.contentType,'cache-control':path==='/'?'no-store':'public, max-age=31536000, immutable'}})}
  return json({error:'Not found'},404)
  }catch(e){return json({error:e instanceof Error?e.message:'Request failed'},400)}
 }}
