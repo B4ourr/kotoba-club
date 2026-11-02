@@ -2,6 +2,8 @@
 
 A small, mobile-first Japanese learning club: reference search, one-tap pronunciation, sharing, comments, favorites, private group progress, and direct WaniKani sync.
 
+First-time visitors see a welcome page and a three-step setup for ChatGPT sign-in, a starting level, and optional read-only WaniKani sync. A connected WaniKani level takes priority over the manual starting preference. The setup can be opened again from Profile.
+
 ## Development
 
 Requirements: Node.js 20+ and npm.
